@@ -1652,8 +1652,8 @@
 	<command name="load">intelmpi/2018-intel</command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">gcc-vanilla/latest</command>
-	<command name="load">intelmpi/2018-gcc</command>
+	<command name="load">gcc/8.2.0</command>
+	<command name="load">intelmpi/2019-gcc</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1677,9 +1677,12 @@
       <env name="I_MPI_DEBUG">10</env>
       <env name="I_MPI_PIN_CELL">core</env>
     </environment_variables>
-    <environment_variables compiler="!intel">
-      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/gnu-arm</env>
-      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/gnu-arm</env>
+    <environment_variables compiler="gnu">
+      <env name="LD_LIBRARY_PATH">/soft/compilers/intel-2019/compilers_and_libraries/linux/mpi/intel64/libfabric/lib:/home/azamat/soft/libs:/home/wuda/soft/hdf5/1.8.16-parallel/gcc-8.2.0/lib:/home/wuda/soft/szip/2.1.1/gcc-7.4.0/lib:/home/wuda/soft/zlib/1.2.11/gcc-8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PATH">/home/wuda/soft/cmake/3.18.0/gcc-8.2.0/bin:$ENV{PATH}</env>
+      <env name="HDF5_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/gcc-8.2.0</env>
+      <env name="NETCDF_PATH">/home/wuda/soft/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/gcc-8.2.0</env>
+      <env name="PNETCDF_PATH">/home/wuda/soft/pnetcdf/1.12.0/gcc-8.2.0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">verbose,granularity=thread,scatter</env>
