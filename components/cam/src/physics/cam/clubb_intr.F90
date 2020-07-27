@@ -191,18 +191,6 @@ module clubb_intr
     snow_dp_idx, &
     vmag_gust_idx
  
-! Physics buffer indices
-  integer, public  :: &
-    swat_dbl_idx   = 0, &
-    qwat_dbl_idx   = 0, &
-    uwat_dbl_idx   = 0, &
-    vwat_dbl_idx   = 0, &
-    wwat_dbl_idx   = 0, &
-    qlwat_dbl_idx  = 0, &
-    qiwat_dbl_idx  = 0, &
-    nlwat_dbl_idx  = 0, &
-    niwat_dbl_idx  = 0
-
   integer, public :: & 
     ixthlp2 = 0, &
     ixwpthlp = 0, &
@@ -284,18 +272,6 @@ module clubb_intr
        call cnst_add(trim(cnst_names(8)),0._r8,0._r8,0._r8,ixup2,longname='CLUBB 2nd moment u wind',cam_outfld=.false.)
        call cnst_add(trim(cnst_names(9)),0._r8,0._r8,0._r8,ixvp2,longname='CLUBB 2nd moment v wind',cam_outfld=.false.)
     end if
-
-    ! save the variables used for dribbling the effect of other processes on
-    ! CLUBB+MG2
-    call pbuf_add_field('QWAT_DBL',   'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qwat_dbl_idx)
-    call pbuf_add_field('SWAT_DBL',   'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), swat_dbl_idx)
-    call pbuf_add_field('UWAT_DBL',   'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), uwat_dbl_idx)
-    call pbuf_add_field('VWAT_DBL',   'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), vwat_dbl_idx)
-    call pbuf_add_field('WWAT_DBL',   'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), wwat_dbl_idx)
-    call pbuf_add_field('QLWAT_DBL',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qlwat_dbl_idx)
-    call pbuf_add_field('QIWAT_DBL',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qiwat_dbl_idx)
-    call pbuf_add_field('NLWAT_DBL',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), nlwat_dbl_idx)
-    call pbuf_add_field('NIWAT_DBL',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), niwat_dbl_idx)
 
     !  put pbuf_add calls here (see macrop_driver.F90 for sample) use indicies defined at top
     call pbuf_add_field('pblh',       'global', dtype_r8, (/pcols/),                    pblh_idx)
