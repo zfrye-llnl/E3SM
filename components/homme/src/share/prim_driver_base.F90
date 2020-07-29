@@ -1479,7 +1479,7 @@ contains
 
 
 
-  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment)
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment,ft)
   !
   ! Apply forcing to tracers
   !    adjustment=1:  apply forcing as hard adjustment, assume qneg check already done
@@ -1507,7 +1507,7 @@ contains
   !    remap                    remap back to ref levels.  ps_v now valid
   !    write restart files      ps_v ok for restart
   !
-  use control_mod,        only : use_moisture, dt_remap_factor
+  use control_mod,        only : use_moisture, dt_remap_factor, ftype
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
@@ -1684,7 +1684,17 @@ contains
    
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
-   
+  
+   if (ftype == 3) then
+
+     elem%state%vtheta_dp(:,:,:,np1) = &
+     elem%state%vtheta_dp(:,:,:,np1) + dt*elem%derived%FVTheta(:,:,:)
+
+     elem%state%phinh_i(:,:,:,np1) = &
+     elem%state%phinh_i(:,:,:,np1) + dt*elem%derived%FPHI(:,:,:) 
+
+   endif
+
 #endif
      
 

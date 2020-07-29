@@ -5822,6 +5822,7 @@ CAM physics forcing option:
 0: tendencies
 1: adjustments
 2: hybrid
+3: theta-l only, hard adjust q, ps, Theta, Phi; dribble u,v
 Default: Set by build-namelist.
 </entry>
 

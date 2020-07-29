@@ -339,15 +339,15 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call TimeLevel_Qdp(TimeLevel, qsplit, tl_fQdp)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! ftype=2,4:  apply forcing to Q,ps.  Return dynamics tendencies
+      ! ftype=2,3,4:  apply forcing to Q,ps.  Return dynamics tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if ( (ftype==2) .or. (ftype==4) ) then
+      if ( (ftype==2) .or. (ftype==3) .or. (ftype==4) ) then
          ! apply forcing to states tl_f 
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
 
-      endif ! if ftype == 2 or == 4
+      endif ! if ftype == 2 or == 3 or  == 4
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=1:  apply all forcings as an adjustment
@@ -356,7 +356,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90i
 
-         !ftype1 also requires a call ty applycamforcing_dynamics, below
+         !ftype1 also requires a call to applycamforcing_dynamics, below
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
       endif !ftype=1 
 
