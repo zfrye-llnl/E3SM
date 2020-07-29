@@ -94,6 +94,7 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
+  logical           :: do_extra_macmic_diag = .false. ! 
 
   !======================================================================= 
 contains
@@ -172,7 +173,8 @@ subroutine phys_register
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
-                      pergro_mods_out          = pergro_mods)
+                      pergro_mods_out          = pergro_mods, &
+                      do_extra_macmic_diag_out = do_extra_macmic_diag)
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -911,6 +913,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
     if(pergro_test_active)call add_fld_default_calls()
    
+   !ShixuanZhang & HuiWan -  For adding addfld and add defualt calls for extra output before/inside/after macmic loop
+    if(do_extra_macmic_diag) call add_fld_extra_macmic_calls()
+
 
 end subroutine phys_init
 
@@ -2423,6 +2428,32 @@ end if
 
        do macmic_it = 1, cld_macmic_num_steps
 
+          if (do_extra_macmic_diag) then
+
+            do k=1,pver
+              do i=1,ncol
+                exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
+                thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+              end do
+            end do
+
+            write (output_name,"(A13,I2.2)") "qliq_bf_club_", macmic_it
+            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "qice_bf_club_", macmic_it
+            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldice), pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "qvap_bf_club_", macmic_it
+            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1)       , pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "temp_bf_club_", macmic_it
+            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)         , pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "thlm_bf_club_", macmic_it
+            call outfld(trim(adjustl(output_name)),  thlm                         , pcols, lchnk )
+
+          end if
+
         if (l_st_mac) then
 
           if (micro_do_icesupersat) then 
@@ -2523,6 +2554,32 @@ end if
 
         end if ! l_st_mac
 
+        if (do_extra_macmic_diag) then
+
+            do k=1,pver
+              do i=1,ncol
+                exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
+                thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+              end do
+            end do
+
+            write (output_name,"(A13,I2.2)") "qliq_af_club_", macmic_it
+            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "qice_af_club_", macmic_it
+            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldice), pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "qvap_af_club_", macmic_it
+            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1) , pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "temp_af_club_", macmic_it
+            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver) , pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "thlm_af_club_", macmic_it
+            call outfld(trim(adjustl(output_name)),  thlm , pcols, lchnk )
+
+        end if
+
 
           !===================================================
           ! Calculate cloud microphysics 
@@ -2605,6 +2662,32 @@ end if
           snow_pcw = 0._r8
 
         end if ! l_st_mic
+
+        if (do_extra_macmic_diag) then
+
+            do k=1,pver
+              do i=1,ncol
+                exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
+                thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+              end do
+            end do
+
+            write (output_name,"(A13,I2.2)") "qliq_af_mg2_", macmic_it
+            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "qice_af_mg2_", macmic_it
+            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldice), pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "qvap_af_mg2_", macmic_it
+            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1) , pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "temp_af_mg2_", macmic_it
+            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver) , pcols, lchnk )
+
+            write (output_name,"(A13,I2.2)") "thlm_af_mg2_", macmic_it
+            call outfld(trim(adjustl(output_name)),  thlm , pcols, lchnk )
+
+        end if
 
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
           snow_sed_macmic(:ncol) = snow_sed_macmic(:ncol) + snow_sed(:ncol)
@@ -2746,6 +2829,33 @@ if (l_rad) then
     call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
 
     call t_stopf('radiation')
+
+    if (do_extra_macmic_diag) then
+
+       do k=1,pver
+        do i=1,ncol
+           exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
+           thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+        end do
+       end do
+
+       output_name    = "qliq_af_rad"
+       call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
+
+       output_name    = "qice_af_rad"
+       call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldice), pcols, lchnk )
+
+       output_name    = "qvap_af_rad"
+       call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1)       , pcols, lchnk )
+
+       output_name    = "temp_af_rad"
+       call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)         , pcols, lchnk )
+
+       output_name    = "thlm_af_rad"
+       call outfld(trim(adjustl(output_name)),  thlm                         , pcols, lchnk )
+
+    end if
+
 
 
 end if ! l_rad
