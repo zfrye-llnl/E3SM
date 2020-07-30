@@ -17,7 +17,7 @@ module prim_advance_mod
   use bndry_mod,          only: bndry_exchangev
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
-    theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom
+    theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom, ftype
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
@@ -738,7 +738,7 @@ contains
   integer :: k,ie
   do ie=nets,nete
 
-     if (ftype \= 3) then
+     if (ftype /= 3) then
        elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)
        elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
      endif

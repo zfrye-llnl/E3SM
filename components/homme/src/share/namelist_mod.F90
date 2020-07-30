@@ -899,7 +899,7 @@ module namelist_mod
     if ( ftype == 3 ) then
        call abortmp('ftype=3 or se_ftype=3 is supported only with theta-l')
     endif
-
+#endif
     if((prescribed_wind/=0).and.(prescribed_wind/=1))then
           call abortmp('prescribed_wind should be either 0 or 1')
     endif

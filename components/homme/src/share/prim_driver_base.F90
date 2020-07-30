@@ -1479,7 +1479,7 @@ contains
 
 
 
-  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment,ft)
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment)
   !
   ! Apply forcing to tracers
   !    adjustment=1:  apply forcing as hard adjustment, assume qneg check already done
