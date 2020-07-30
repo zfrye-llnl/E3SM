@@ -264,7 +264,7 @@ subroutine phys_register
        call pbuf_add_field('QI_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qi_after_macmic_idx)
        call pbuf_add_field('NL_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), nl_after_macmic_idx)
        call pbuf_add_field('NI_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), ni_after_macmic_idx)
-       call pbuf_add_field('THLM_After_MACMIC',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), thlm_after_macmic_idx)
+       call pbuf_add_field('THL_After_MACMIC',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), thlm_after_macmic_idx)
 
     ! Who should add FRACIS? 
     ! -- It does not seem that aero_intr should add it since FRACIS is used in convection
@@ -2509,7 +2509,7 @@ end if
           ifld = pbuf_get_index('NI_After_MACMIC')
           call pbuf_get_field(pbuf, ifld, ni_after_macmic, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-          ifld = pbuf_get_index('THLM_After_MACMIC')
+          ifld = pbuf_get_index('THL_After_MACMIC')
           call pbuf_get_field(pbuf, ifld, thlm_after_macmic, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
        else
