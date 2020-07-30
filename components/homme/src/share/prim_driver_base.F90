@@ -1294,7 +1294,7 @@ contains
 #ifdef CAM
     apply_forcing = ftype == 0
 #else
-    apply_forcing = ftype == 0 .or. ftype == 2 .or. ftype == 4
+    apply_forcing = ftype == 0 .or. ftype == 2 .or. ftype == 3 .or. ftype == 4
 #endif
     if (apply_forcing) then
        ! Apply tracer forcings over tracer time step.
@@ -1316,7 +1316,7 @@ contains
           ! diagnostics will be incorrect
           call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
           if (compute_diagnostics_it) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
-       else if (ftype == 2 .or. ftype == 0) then
+       else if (ftype == 2 .or. ftype == 3 .or.  ftype == 0) then
           ! Apply dynamics forcing over the dynamics (vertically Eulerian) or
           ! vertical remap time step if we're at reference levels.
           if (dt_remap_factor > 0) then
@@ -1458,7 +1458,7 @@ contains
     call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
   elseif (ftype==1) then
     !do nothing
-  elseif (ftype==2) then
+  elseif (ftype==2 .or. ftype==3) then
     ! with CAM physics, tracers were adjusted in dp coupling layer
 #ifndef CAM
     do ie = nets,nete
