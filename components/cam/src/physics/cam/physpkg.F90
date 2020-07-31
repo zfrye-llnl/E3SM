@@ -264,7 +264,7 @@ subroutine phys_register
        call pbuf_add_field('QI_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qi_after_macmic_idx)
        call pbuf_add_field('NL_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), nl_after_macmic_idx)
        call pbuf_add_field('NI_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), ni_after_macmic_idx)
-       call pbuf_add_field('THL_After_MACMIC',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), thlm_after_macmic_idx)
+       call pbuf_add_field('THL_After_MACMIC',   'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), thlm_after_macmic_idx)
 
     ! Who should add FRACIS? 
     ! -- It does not seem that aero_intr should add it since FRACIS is used in convection
@@ -2512,7 +2512,7 @@ end if
           ifld = pbuf_get_index('THL_After_MACMIC')
           call pbuf_get_field(pbuf, ifld, thlm_after_macmic, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-       else
+       else if (dribble_tend_into_macmic_loop /= 0)
 
         !we add this here for a sanity check
         call endrun ('TPHYSBC error:  the option for tendency dribbling in macmic does not exist')
@@ -2552,9 +2552,9 @@ end if
 
           !Restore the state variable back to the previous step as that is the
           !start point for tendency dribbling  
-          state%s(:ncol,:pver)          = s_after_macmic(:ncol,:pver)
-          state%t(:ncol,:pver)          = t_after_macmic(:ncol,:pver)
-          state%q(:ncol,:pver,1)        = q_after_macmic(:ncol,:pver)
+          state%s(:ncol,:pver)          =  s_after_macmic(:ncol,:pver)
+          state%t(:ncol,:pver)          =  t_after_macmic(:ncol,:pver)
+          state%q(:ncol,:pver,1)        =  q_after_macmic(:ncol,:pver)
           state%q(:ncol,:pver,ixcldliq) = ql_after_macmic(:ncol,:pver)
           state%q(:ncol,:pver,ixcldice) = qi_after_macmic(:ncol,:pver)
           state%q(:ncol,:pver,ixnumliq) = nl_after_macmic(:ncol,:pver)
@@ -2566,7 +2566,7 @@ end if
             call physics_ptend_copy(ptend_dribble, ptend)
             ptend%s(:ncol,:pver)      = 0._r8        
             ptend%lq(:)               = .false.
-            call physics_update(state, ptend, cld_macmic_ztodt)
+            call physics_update(state, ptend, ztodt)
 
             !Turn off the update for dry static energy, water vapor, cloud liquid, 
             !but still dribble cloud ice and number concentration
@@ -2602,7 +2602,7 @@ end if
             call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver) , pcols, lchnk )
 
             write (output_name,"(A13,I2.2)") "thlm_bf_drib_", macmic_it
-            call outfld(trim(adjustl(output_name)),  thlm , pcols, lchnk )
+            call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver) , pcols, lchnk )
 
         end if
 
@@ -2637,7 +2637,7 @@ end if
             call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)         , pcols, lchnk )
 
             write (output_name,"(A13,I2.2)") "thlm_bf_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  thlm                         , pcols, lchnk )
+            call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver)            , pcols, lchnk )
 
         end if
 
@@ -2770,10 +2770,10 @@ end if
             call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1) , pcols, lchnk )
 
             write (output_name,"(A13,I2.2)") "temp_af_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver) , pcols, lchnk )
+            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)   , pcols, lchnk )
 
             write (output_name,"(A13,I2.2)") "thlm_af_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  thlm , pcols, lchnk )
+            call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver)      , pcols, lchnk )
 
         end if
 
@@ -2879,10 +2879,10 @@ end if
             call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1) , pcols, lchnk )
 
             write (output_name,"(A13,I2.2)") "temp_af_mg2_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver) , pcols, lchnk )
+            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)  , pcols, lchnk )
 
             write (output_name,"(A13,I2.2)") "thlm_af_mg2_", macmic_it
-            call outfld(trim(adjustl(output_name)),  thlm , pcols, lchnk )
+            call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver)     , pcols, lchnk )
 
         end if
 
@@ -3074,7 +3074,7 @@ if (l_rad) then
        call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)         , pcols, lchnk )
 
        output_name    = "thlm_af_rad"
-       call outfld(trim(adjustl(output_name)),  thlm                         , pcols, lchnk )
+       call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver)            , pcols, lchnk )
 
     end if
 
