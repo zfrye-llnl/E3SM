@@ -2512,7 +2512,7 @@ end if
           ifld = pbuf_get_index('THL_After_MACMIC')
           call pbuf_get_field(pbuf, ifld, thlm_after_macmic, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-       else if (dribble_tend_into_macmic_loop /= 0)
+       else if (dribble_tend_into_macmic_loop /= 0) then
 
         !we add this here for a sanity check
         call endrun ('TPHYSBC error:  the option for tendency dribbling in macmic does not exist')
