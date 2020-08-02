@@ -79,7 +79,7 @@ module physpkg
     qi_after_macmic_idx   = 0, &
     nl_after_macmic_idx   = 0, &
     ni_after_macmic_idx   = 0, &
-    thlm_after_macmic_idx = 0
+    tl_after_macmic_idx   = 0
 
 
   save
@@ -264,7 +264,7 @@ subroutine phys_register
        call pbuf_add_field('QI_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qi_after_macmic_idx)
        call pbuf_add_field('NL_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), nl_after_macmic_idx)
        call pbuf_add_field('NI_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), ni_after_macmic_idx)
-       call pbuf_add_field('THL_After_MACMIC',   'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), thlm_after_macmic_idx)
+       call pbuf_add_field('TL_After_MACMIC',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), tl_after_macmic_idx)
 
     ! Who should add FRACIS? 
     ! -- It does not seem that aero_intr should add it since FRACIS is used in convection
@@ -2056,10 +2056,10 @@ subroutine tphysbc (ztodt,               &
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
     !ShixuanZhang & HuiWan: added for extra output before/inside/after macmic loop
-    real(r8), parameter :: p0_thlm = 100000._r8
-    real(r8) :: exner_thlm
-    real(r8) :: thlm(pcols,pver)        ! Mean liquid potential temperature [K]
-    character(200) :: output_name     ! String for temporal variable name
+    real(r8), parameter :: p_reference = 100000._r8 ! Reference pressure for exner function
+    real(r8) :: exner
+    real(r8) :: thlm(pcols,pver)          ! local array for mean liquid potential temperature [K]
+    character(200) :: output_name         ! String for temporal variable name
     !ShixuanZhang & HuiWan: added for extra output before/inside/after macmic loop
 
     !ShixuanZhang & HuiWan (2020/07): added for a test of using tendency dribbling in cloud physics parameterizations 
@@ -2079,8 +2079,8 @@ subroutine tphysbc (ztodt,               &
     real(r8), pointer, dimension(:,:) :: ni_after_macmic
     real(r8), pointer, dimension(:,:) :: thlm_after_macmic
 
-    real(r8) :: thlm_dribble_forcing(pcols,pver)
-    real(r8) :: rtm_dribble_forcing(pcols,pver)
+    real(r8) :: thl_dribble_forcing(pcols,pver)
+    real(r8) :: rt_dribble_forcing(pcols,pver)
     !Shixuan Zhang & HuiWan (2020/07): added for a test of using tendency dribbling in cloud physics parameterizations 
 
 
@@ -2474,8 +2474,8 @@ end if
        !ShixuanZhang & HuiWan (2020/07): added for a test of using tendency dribbling in cloud physics parameterizations 
        
        ! clear the dribbled forcing that will be determined later 
-       thlm_dribble_forcing(:ncol,:pver)     = 0._r8
-       rtm_dribble_forcing(:ncol,:pver)      = 0._r8
+       thl_dribble_forcing(:ncol,:pver)     = 0._r8
+       rt_dribble_forcing(:ncol,:pver)      = 0._r8
 
        call cnst_get_ind('CLDLIQ', ixcldliq)
        call cnst_get_ind('CLDICE', ixcldice)
@@ -2509,7 +2509,7 @@ end if
           ifld = pbuf_get_index('NI_After_MACMIC')
           call pbuf_get_field(pbuf, ifld, ni_after_macmic, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-          ifld = pbuf_get_index('THL_After_MACMIC')
+          ifld = pbuf_get_index('TL_After_MACMIC')
           call pbuf_get_field(pbuf, ifld, thlm_after_macmic, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
        else if (dribble_tend_into_macmic_loop /= 0) then
@@ -2542,11 +2542,11 @@ end if
            
           if ( dribble_tend_into_macmic_loop == 2 ) then
 
-            thlm(:ncol,:pver)                     = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p0_thlm)**(rair/cpair)) -  &
-                                                    (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-            thlm_dribble_forcing(:ncol,:pver)     = (thlm(:ncol,:pver)             -  thlm_after_macmic(:ncol,:pver)) / ztodt
-            rtm_dribble_forcing(:ncol,:pver)      = (state%q(:ncol,:pver,1)        -  q_after_macmic(:ncol,:pver))    / ztodt  + &
-                                                    (state%q(:ncol,:pver,ixcldliq) -  ql_after_macmic(:ncol,:pver))   / ztodt
+            exner                               = 1._r8/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair))
+            thlm(:ncol,:pver)                   = state%t(:ncol,:pver)*exner     - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
+            thl_dribble_forcing(:ncol,:pver)    = (thlm(:ncol,:pver)             -  thlm_after_macmic(:ncol,:pver)) / ztodt
+            rt_dribble_forcing(:ncol,:pver)     = (state%q(:ncol,:pver,1)        -  q_after_macmic(:ncol,:pver)   ) / ztodt  + &
+                                                  (state%q(:ncol,:pver,ixcldliq) -  ql_after_macmic(:ncol,:pver)  ) / ztodt
 
           end if
 
@@ -2584,8 +2584,8 @@ end if
 
             do k=1,pver
               do i=1,ncol
-                exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
-                thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+                exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
+                thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
               end do
             end do
 
@@ -2619,8 +2619,8 @@ end if
 
             do k=1,pver
               do i=1,ncol
-                exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
-                thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+                exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
+                thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
               end do
             end do
 
@@ -2715,7 +2715,7 @@ end if
    
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
-                dlf, det_s, det_ice, lcldo, thlm_dribble_forcing, rtm_dribble_forcing)
+                dlf, det_s, det_ice, lcldo, thl_dribble_forcing, rt_dribble_forcing)
 
                 !  Since we "added" the reserved liquid back in this routine, we need 
                 !    to account for it in the energy checker
@@ -2755,8 +2755,8 @@ end if
 
             do k=1,pver
               do i=1,ncol
-                exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
-                thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+                exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
+                thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
               end do
             end do
 
@@ -2864,8 +2864,8 @@ end if
 
             do k=1,pver
               do i=1,ncol
-                exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
-                thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+                exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
+                thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
               end do
             end do
 
@@ -2920,9 +2920,11 @@ end if
          qi_after_macmic(:ncol,:pver)    = state%q(:ncol,:pver,ixcldice)
          nl_after_macmic(:ncol,:pver)    = state%q(:ncol,:pver,ixnumliq)
          ni_after_macmic(:ncol,:pver)    = state%q(:ncol,:pver,ixnumice)
-         thlm_after_macmic(:ncol,:pver)  = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p0_thlm)**(rair/cpair))  &
-                                           - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
- 
+
+         ! Calculate and save the liquid potential temperature to pbuf
+         exner                           = 1._r8/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair))
+         thlm_after_macmic(:ncol,:pver)  = state%t(:ncol,:pver)*exner - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
+
        end if
 
      end if !microp_scheme
@@ -3056,8 +3058,8 @@ if (l_rad) then
 
        do k=1,pver
         do i=1,ncol
-           exner_thlm  = 1._r8/((state%pmid(i,k)/p0_thlm)**(rair/cpair))
-           thlm(i,k)   = state%t(i,k)*exner_thlm - (latvap/cpair)*state%q(i,k,ixcldliq)
+           exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
+           thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
         end do
        end do
 

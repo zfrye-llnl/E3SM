@@ -889,7 +889,7 @@ end subroutine clubb_init_cnst
                               state,   ptend_all,   pbuf,     hdtime, &
                               cmfmc,   cam_in,   sgh30, & 
                               macmic_it, cld_macmic_num_steps,dlf, det_s, det_ice, alst_o, &
-                              thlm_dribble_forcing, rtm_dribble_forcing)
+                              thl_dribble_forcing, rt_dribble_forcing)
 
 !-------------------------------------------------------------------------------
 ! Description: Provide tendencies of shallow convection, turbulence, and 
@@ -960,8 +960,8 @@ end subroutine clubb_init_cnst
    integer,             intent(in)    :: cld_macmic_num_steps     ! number of mac-mic iterations
    integer,             intent(in)    :: macmic_it                ! number of mac-mic iterations
     
-   real(r8),            intent(in)    :: thlm_dribble_forcing(pcols,pver)     ! the dribbled tendency of thlm
-   real(r8),            intent(in)    :: rtm_dribble_forcing(pcols,pver)      ! the dribbled tendency of rtm 
+   real(r8),            intent(in)    :: thl_dribble_forcing(pcols,pver)     ! the dribbled tendency of thlm
+   real(r8),            intent(in)    :: rt_dribble_forcing(pcols,pver)      ! the dribbled tendency of rtm 
 
 
    ! ---------------------- !
