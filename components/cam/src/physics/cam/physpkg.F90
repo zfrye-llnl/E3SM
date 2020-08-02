@@ -2534,9 +2534,9 @@ end if
 
             thlm(:ncol,:pver)                   = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair))  &
                                                   - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-            thl_dribble_forcing(:ncol,:pver)    = (thlm(:ncol,:pver)             -  thlm_after_macmic(:ncol,:pver)) / ztodt
-            rt_dribble_forcing(:ncol,:pver)     = (state%q(:ncol,:pver,1)        -  q_after_macmic(:ncol,:pver)   ) / ztodt  + &
-                                                  (state%q(:ncol,:pver,ixcldliq) -  ql_after_macmic(:ncol,:pver)  ) / ztodt
+            thl_dribble_forcing(:ncol,:pver)    = -(thlm(:ncol,:pver)             -  thlm_after_macmic(:ncol,:pver)) / ztodt
+            rt_dribble_forcing(:ncol,:pver)     = -(state%q(:ncol,:pver,1)        -  q_after_macmic(:ncol,:pver)   ) / ztodt  &
+                                                  -(state%q(:ncol,:pver,ixcldliq) -  ql_after_macmic(:ncol,:pver)  ) / ztodt
 
           end if
 
