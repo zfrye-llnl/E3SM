@@ -2056,10 +2056,9 @@ subroutine tphysbc (ztodt,               &
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
     !ShixuanZhang & HuiWan: added for extra output before/inside/after macmic loop
-    real(r8), parameter :: p_reference = 100000._r8 ! Reference pressure for exner function
-    real(r8) :: exner
-    real(r8) :: thlm(pcols,pver)          ! local array for mean liquid potential temperature [K]
-    character(200) :: output_name         ! String for temporal variable name
+    real(r8), parameter :: p_reference = 100000._r8 ! Reference pressure for calculating thlm
+    real(r8)            :: thlm(pcols,pver)         ! local array for mean liquid potential temperature [K]
+    character(200)      :: output_name              ! String for temporal variable name
     !ShixuanZhang & HuiWan: added for extra output before/inside/after macmic loop
 
     !ShixuanZhang & HuiWan (2020/07): added for a test of using tendency dribbling in cloud physics parameterizations 
@@ -2542,8 +2541,8 @@ end if
            
           if ( dribble_tend_into_macmic_loop == 2 ) then
 
-            exner                               = 1._r8/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair))
-            thlm(:ncol,:pver)                   = state%t(:ncol,:pver)*exner     - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
+            thlm(:ncol,:pver)                   = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &
+                                                  - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
             thl_dribble_forcing(:ncol,:pver)    = (thlm(:ncol,:pver)             -  thlm_after_macmic(:ncol,:pver)) / ztodt
             rt_dribble_forcing(:ncol,:pver)     = (state%q(:ncol,:pver,1)        -  q_after_macmic(:ncol,:pver)   ) / ztodt  + &
                                                   (state%q(:ncol,:pver,ixcldliq) -  ql_after_macmic(:ncol,:pver)  ) / ztodt
@@ -2582,12 +2581,8 @@ end if
 
         if (do_extra_macmic_diag) then
 
-            do k=1,pver
-              do i=1,ncol
-                exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
-                thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
-              end do
-            end do
+            thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + & 
+                                - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
 
             write (output_name,"(A13,I2.2)") "qliq_bf_drib_", macmic_it
             call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
@@ -2617,12 +2612,8 @@ end if
 
         if (do_extra_macmic_diag) then
 
-            do k=1,pver
-              do i=1,ncol
-                exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
-                thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
-              end do
-            end do
+            thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                  
+                                - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
 
             write (output_name,"(A13,I2.2)") "qliq_bf_club_", macmic_it
             call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
@@ -2753,12 +2744,8 @@ end if
 
         if (do_extra_macmic_diag) then
 
-            do k=1,pver
-              do i=1,ncol
-                exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
-                thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
-              end do
-            end do
+            thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                  
+                                - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
 
             write (output_name,"(A13,I2.2)") "qliq_af_club_", macmic_it
             call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
@@ -2862,12 +2849,8 @@ end if
 
         if (do_extra_macmic_diag) then
 
-            do k=1,pver
-              do i=1,ncol
-                exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
-                thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
-              end do
-            end do
+            thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                  
+                                - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
 
             write (output_name,"(A13,I2.2)") "qliq_af_mg2_", macmic_it
             call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
@@ -2922,8 +2905,7 @@ end if
          ni_after_macmic(:ncol,:pver)    = state%q(:ncol,:pver,ixnumice)
 
          ! Calculate and save the liquid potential temperature to pbuf
-         exner                           = 1._r8/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair))
-         thlm_after_macmic(:ncol,:pver)  = state%t(:ncol,:pver)*exner - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
+         thlm_after_macmic(:ncol,:pver)  = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                                                      - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
 
        end if
 
@@ -3056,12 +3038,8 @@ if (l_rad) then
 
     if (do_extra_macmic_diag) then
 
-       do k=1,pver
-        do i=1,ncol
-           exner  = 1._r8/((state%pmid(i,k)/p_reference)**(rair/cpair))
-           thlm(i,k)   = state%t(i,k)*exner - (latvap/cpair)*state%q(i,k,ixcldliq)
-        end do
-       end do
+       thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &
+                           - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
 
        output_name    = "qliq_af_rad"
        call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
