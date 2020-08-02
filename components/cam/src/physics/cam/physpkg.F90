@@ -107,7 +107,6 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
-  logical           :: do_extra_macmic_diag = .false. ! 
 
   !======================================================================= 
 contains
@@ -186,8 +185,7 @@ subroutine phys_register
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
-                      pergro_mods_out          = pergro_mods, &
-                      do_extra_macmic_diag_out = do_extra_macmic_diag)
+                      pergro_mods_out          = pergro_mods)
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -937,9 +935,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
     if(pergro_test_active)call add_fld_default_calls()
    
-   !ShixuanZhang & HuiWan -  For adding addfld and add defualt calls for extra output before/inside/after macmic loop
-    if(do_extra_macmic_diag) call add_fld_extra_macmic_calls()
-
 
 end subroutine phys_init
 
@@ -2055,13 +2050,9 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
-    !ShixuanZhang & HuiWan: added for extra output before/inside/after macmic loop
-    real(r8), parameter :: p_reference = 100000._r8 ! Reference pressure for calculating thlm
-    real(r8)            :: thlm(pcols,pver)         ! local array for mean liquid potential temperature [K]
-    character(200)      :: output_name              ! String for temporal variable name
-    !ShixuanZhang & HuiWan: added for extra output before/inside/after macmic loop
-
     !ShixuanZhang & HuiWan (2020/07): added for a test of using tendency dribbling in cloud physics parameterizations 
+    real(r8), parameter   :: p_reference = 100000._r8         ! Reference pressure for calculating thlm
+    real(r8)              :: thlm(pcols,pver)                 ! local array for mean liquid potential temperature [K]
     type(physics_ptend)   :: ptend_dribble                    ! local array to save tendencies to be dribbled 
     integer               :: dribble_tend_into_macmic_loop    ! namelist variable, options for tendency dribbling in cloud physics
     integer               :: dribble_start_step               ! namelist variable, specifying which step the dribbling start  
@@ -2579,28 +2570,6 @@ end if
 
        do macmic_it = 1, cld_macmic_num_steps
 
-        if (do_extra_macmic_diag) then
-
-            thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + & 
-                                - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-
-            write (output_name,"(A13,I2.2)") "qliq_bf_drib_", macmic_it
-            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "qice_bf_drib_", macmic_it
-            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldice), pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "qvap_bf_drib_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1) , pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "temp_bf_drib_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver) , pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "thlm_bf_drib_", macmic_it
-            call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver) , pcols, lchnk )
-
-        end if
-
         !ShixuanZhang & HuiWan (2020/07): added for a test of using tendency dribbling in cloud physics parameterizations 
         if (l_dribble) then
 
@@ -2609,28 +2578,6 @@ end if
 
         end if
 
-
-        if (do_extra_macmic_diag) then
-
-            thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                  
-                                - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-
-            write (output_name,"(A13,I2.2)") "qliq_bf_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "qice_bf_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldice), pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "qvap_bf_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1)       , pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "temp_bf_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)         , pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "thlm_bf_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver)            , pcols, lchnk )
-
-        end if
 
         if (l_st_mac) then
 
@@ -2742,28 +2689,6 @@ end if
 
         end if ! l_st_mac
 
-        if (do_extra_macmic_diag) then
-
-            thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                  
-                                - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-
-            write (output_name,"(A13,I2.2)") "qliq_af_club_", macmic_it
-            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "qice_af_club_", macmic_it
-            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldice), pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "qvap_af_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1) , pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "temp_af_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)   , pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "thlm_af_club_", macmic_it
-            call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver)      , pcols, lchnk )
-
-        end if
-
 
           !===================================================
           ! Calculate cloud microphysics 
@@ -2847,28 +2772,6 @@ end if
 
         end if ! l_st_mic
 
-        if (do_extra_macmic_diag) then
-
-            thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                  
-                                - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-
-            write (output_name,"(A13,I2.2)") "qliq_af_mg2_", macmic_it
-            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "qice_af_mg2_", macmic_it
-            call outfld(trim(adjustl(output_name)), state%q(:ncol,:pver,ixcldice), pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "qvap_af_mg2_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1) , pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "temp_af_mg2_", macmic_it
-            call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)  , pcols, lchnk )
-
-            write (output_name,"(A13,I2.2)") "thlm_af_mg2_", macmic_it
-            call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver)     , pcols, lchnk )
-
-        end if
-
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
           snow_sed_macmic(:ncol) = snow_sed_macmic(:ncol) + snow_sed(:ncol)
           prec_pcw_macmic(:ncol) = prec_pcw_macmic(:ncol) + prec_pcw(:ncol)
@@ -2905,8 +2808,8 @@ end if
          ni_after_macmic(:ncol,:pver)    = state%q(:ncol,:pver,ixnumice)
 
          ! Calculate and save the liquid potential temperature to pbuf
-         thlm_after_macmic(:ncol,:pver)  = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                                                      - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-
+         thlm_after_macmic(:ncol,:pver)  = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &                                                                             - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
+  
        end if
 
      end if !microp_scheme
@@ -3035,30 +2938,6 @@ if (l_rad) then
     call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
 
     call t_stopf('radiation')
-
-    if (do_extra_macmic_diag) then
-
-       thlm(:ncol,:pver) = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) + &
-                           - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-
-       output_name    = "qliq_af_rad"
-       call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldliq), pcols, lchnk )
-
-       output_name    = "qice_af_rad"
-       call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,ixcldice), pcols, lchnk )
-
-       output_name    = "qvap_af_rad"
-       call outfld(trim(adjustl(output_name)),  state%q(:ncol,:pver,1)       , pcols, lchnk )
-
-       output_name    = "temp_af_rad"
-       call outfld(trim(adjustl(output_name)),  state%t(:ncol,:pver)         , pcols, lchnk )
-
-       output_name    = "thlm_af_rad"
-       call outfld(trim(adjustl(output_name)),  thlm(:ncol,:pver)            , pcols, lchnk )
-
-    end if
-
-
 
 end if ! l_rad
 
