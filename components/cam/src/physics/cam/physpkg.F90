@@ -2534,9 +2534,14 @@ end if
 
             thlm(:ncol,:pver)                   = state%t(:ncol,:pver)/((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair))  &
                                                   - (latvap/cpair)*state%q(:ncol,:pver,ixcldliq)
-            thl_dribble_forcing(:ncol,:pver)    = -(thlm(:ncol,:pver)             -  thlm_after_macmic(:ncol,:pver)) / ztodt
-            rt_dribble_forcing(:ncol,:pver)     = -(state%q(:ncol,:pver,1)        -  q_after_macmic(:ncol,:pver)   ) / ztodt  &
-                                                  -(state%q(:ncol,:pver,ixcldliq) -  ql_after_macmic(:ncol,:pver)  ) / ztodt
+            thl_dribble_forcing(:ncol,:pver)    =  (thlm(:ncol,:pver)             -  thlm_after_macmic(:ncol,:pver)) / ztodt
+            rt_dribble_forcing(:ncol,:pver)     =  (state%q(:ncol,:pver,1)        -  q_after_macmic(:ncol,:pver)   ) / ztodt  &
+                                                  +(state%q(:ncol,:pver,ixcldliq) -  ql_after_macmic(:ncol,:pver)  ) / ztodt
+
+            !recalculate the tendency of dry static energy that is only associated with thlm
+            !ptend_dribble%s(:ncol,:pver)        = cpair*( ((thlm(:ncol,:pver) + (latvap/cpair)*state%q(:ncol,:pver,ixcldliq))        &
+            !                                      - (thlm_after_macmic(:ncol,:pver) + (latvap/cpair)*ql_after_macmic(:ncol,:pver)) ) &
+            !                                      * ((state%pmid(:ncol,:pver)/p_reference)**(rair/cpair)) )           / ztodt
 
           end if
 
@@ -2563,6 +2568,9 @@ end if
             ptend_dribble%ls           = .false.
             ptend_dribble%lq(1)        = .false.
             ptend_dribble%lq(ixcldliq) = .false.
+
+            !Deduct the dribbled tendency from the "tend", otherwise it will be double counted
+            tend%dtdt(:ncol,:pver)          = tend%dtdt(:ncol,:pver) - ptend_dribble%s(:ncol,:pver)/cpair
 
           end if 
 
@@ -2660,16 +2668,6 @@ end if
                 flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
                 flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
                  
-                !  Here, we need to deduct the dribbled tendency from the ptend
-                !  for the option 2 of tendency dribbling 
-                if ( l_dribble .and. (dribble_tend_into_macmic_loop == 2) ) then
-
-                   ptend%s(:ncol,:pver)            = ptend%s(:ncol,:pver)           -  ptend_dribble%s(:ncol,:pver) 
-                   ptend%q(:ncol,:pver,1)          = ptend%q(:ncol,:pver,1)         -  ptend_dribble%q(:ncol,:pver,1)
-                   ptend%q(:ncol,:pver,ixcldliq)   = ptend%q(:ncol,:pver,ixcldliq)  -  ptend_dribble%q(:ncol,:pver,ixcldliq)
-
-                end if
-                
                 ! Unfortunately, physics_update does not know what time period
                 ! "tend" is supposed to cover, and therefore can't update it
                 ! with substeps correctly. For now, work around this by scaling

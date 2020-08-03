@@ -1668,11 +1668,12 @@ end subroutine clubb_init_cnst
 
       !  Define forcings from CAM to CLUBB for thlm and rtm
       do k=1,pver
-         thlm_forcing(k) = thl_dribble_forcing(i,pver-k+1)
-         rtm_forcing(k)  = rt_dribble_forcing(i,pver-k+1)
+         thlm_forcing(k+1) = thl_dribble_forcing(i,pver-k+1)
+         rtm_forcing(k+1)  = rt_dribble_forcing(i,pver-k+1)
       enddo
-      thlm_forcing(pverp) = 0._r8 !thl_forcing(1:ncol,pver)
-      rtm_forcing(pverp)  = 0._r8 !rt_forcing(1:ncol,pver)
+      ! Set forcing to zero for the ghost point.
+      thlm_forcing(1) = 0._r8 !thl_forcing(1:ncol,pver)
+      rtm_forcing(1)  = 0._r8 !rt_forcing(1:ncol,pver)
        
       !  Define forcings from CAM to CLUBB as zero for momentum and thermo,
       !  forcings already applied through CAM
