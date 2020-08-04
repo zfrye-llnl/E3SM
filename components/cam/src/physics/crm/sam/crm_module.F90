@@ -30,7 +30,6 @@ module crm_module
   use crm_input_module,       only: crm_input_type
   use crm_output_module,      only: crm_output_type
   use crm_ecpp_output_module, only: crm_ecpp_output_type
-  use phys_grid             , only: get_rlon_p, get_rlat_p, get_gcol_p  
 #ifdef ECPP  
   use module_ecpp_crm_driver, only: ecpp_crm_stat, ecpp_crm_init, ecpp_crm_cleanup
 #endif
@@ -44,7 +43,8 @@ contains
 
 subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 crm_input, crm_state, crm_rad,  &
-                crm_ecpp_output, crm_output )
+                crm_ecpp_output, crm_output, latitude0, longitude0, gcolp, igstep, &
+                use_crm_accel_in, crm_accel_factor_in, crm_accel_uv_in)
     !-----------------------------------------------------------------------------------------------
     !-----------------------------------------------------------------------------------------------
     use shr_kind_mod          , only: r8 => shr_kind_r8
@@ -68,7 +68,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                                       qlsink_bf_cen_sum, qlsink_avg_cen_sum, prain_cen_sum, qlsink_bf, prain
     use ecppvars              , only: NCLASS_CL, ncls_ecpp_in, NCLASS_PR
 #endif /* ECPP */
-    use accelerate_crm_mod    , only: use_crm_accel, crm_accel_factor, crm_accel_nstop, accelerate_crm
+    use accelerate_crm_mod    , only: use_crm_accel, crm_accel_factor, crm_accel_nstop, accelerate_crm, crm_accel_uv
     use cam_abortutils        , only: endrun
     use time_manager          , only: get_nstep
 
@@ -87,6 +87,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     type(crm_rad_type), target,intent(inout) :: crm_rad
     type(crm_ecpp_output_type),intent(inout) :: crm_ecpp_output
     type(crm_output_type), target,     intent(inout) :: crm_output
+    real(crm_rknd), intent(in) :: latitude0(:)
+    real(crm_rknd), intent(in) :: longitude0(:)
+    integer       , intent(in) :: igstep
+    integer       , intent(in) :: gcolp(:)
+    logical       , intent(in) :: use_crm_accel_in
+    real(crm_rknd), intent(in) :: crm_accel_factor_in
+    logical       , intent(in) :: crm_accel_uv_in
 
     !-----------------------------------------------------------------------------------------------
     ! Local variable declarations
@@ -109,7 +116,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
 
     ! These should all be inputs
-    integer         :: igstep            ! GCM time steps
     integer         :: iseed             ! seed for random perturbation
     ! variables for radiation grouping method
     real(crm_rknd) :: crm_nx_rad_fac
@@ -157,6 +163,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd), pointer :: crm_state_qt         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qp         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qn         (:,:,:,:)
+
+    use_crm_accel    = use_crm_accel_in   
+    crm_accel_factor = crm_accel_factor_in
+    crm_accel_uv = crm_accel_uv_in
 
   !-----------------------------------------------------------------------------------------------
   !-----------------------------------------------------------------------------------------------
@@ -246,14 +256,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_state_qn          => crm_state%qn         (1:ncrms,:,:,:)
   
   crm_accel_ceaseflag = .false.
-
-  !Loop over "vector columns"
-  do icrm = 1 , ncrms
-    latitude0 (icrm) = get_rlat_p(lchnk, icrm) * 57.296_r8
-    longitude0(icrm) = get_rlon_p(lchnk, icrm) * 57.296_r8
-  enddo
-
-  igstep = get_nstep()
 
 !-----------------------------------------------
 
@@ -638,7 +640,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   do icrm = 1, ncrms
     if ( igstep <= 1 ) then
-        iseed = get_gcol_p(lchnk,icrm) * perturb_seed_scale
+        iseed = gcolp(icrm) * perturb_seed_scale
         call setperturb(ncrms,icrm,iseed)
     end if
 
