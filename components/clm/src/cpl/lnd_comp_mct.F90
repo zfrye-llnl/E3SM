@@ -491,6 +491,11 @@ contains
        if (rstwr_sync .and. dosend) rstwr = .true.
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
+       if(step_count == stop_step) then
+               dosend = .true.
+               rstwr  = .true.
+               nlend = .true.
+       end if 
        !
        ! Run clm
        call clm_drv(step_count, rstwr, nlend, rdate)
@@ -504,9 +509,6 @@ contains
 #endif
 
         
-       if(step_count > stop_step) then
-               dosend = .true.
-       end if 
        ! Advance clm time step
 
        call advance_timestep()
@@ -707,7 +709,7 @@ contains
   end subroutine lnd_domain_mct
 
 
-  subroutine acc_initialization()
+        subroutine acc_initialization()
                 use openacc
                 use spmdMod,  only : iam
 
@@ -720,6 +722,6 @@ contains
                 call acc_set_device_num(mod(iam,ngpus),acc_device_nvidia)
 
                 mygpu = acc_get_device_num(acc_device_nvidia)
-   end subroutine
+        end subroutine
 
 end module lnd_comp_mct

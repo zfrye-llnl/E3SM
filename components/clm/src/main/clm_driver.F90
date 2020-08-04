@@ -441,7 +441,9 @@ contains
        if (use_cn) then
           ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
           if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
+             call t_startf('interpMonthlyVeg')
              !call interpMonthlyVeg(bounds_proc, canopystate_vars)
+             call t_stopf('interpMonthlyVeg')
           endif
 
        else
@@ -453,7 +455,9 @@ contains
           ! interpolated values.
           if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND )) then
              !print *, "TURNED OFF INTERPMONTHLYVEG"
+              call t_startf('interpMonthlyVeg')
              !call interpMonthlyVeg(bounds_proc, canopystate_vars)
+             call t_stopf('interpMonthlyVeg')
           end if
        end if
     end if
@@ -624,9 +628,6 @@ contains
     if (.not. use_fates)then
        if (use_cn) then
           if (nstep_mod < 2 )then
-             if (masterproc) then
-                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-             end if
           else
 
             !print *, "3rd loop!"
@@ -634,7 +635,6 @@ contains
             !$acc parallel default(present)
 
               !$acc loop independent gang private(nc, bounds_clump)
-
 
              do nc = 1,nclumps
                 call get_clump_bounds_gpu(nc, bounds_clump)
@@ -697,8 +697,6 @@ contains
     !$acc parallel default(present)
 
       !$acc loop independent gang private(nc, bounds_clump)
-
-
      do nc = 1,nclumps
        call get_clump_bounds_gpu(nc, bounds_clump)
 
@@ -756,9 +754,11 @@ contains
 
 #ifndef CPL_BYPASS
     if (use_cn) then
+       call t_startf('ndep_interp')
        ! PET: switching CN timestep
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call FireInterp(bounds_proc)
+       call t_stopf('ndep_interp')
     end if
 
     ! ============================================================================
@@ -784,8 +784,7 @@ contains
 
 
     !print *, "main (5th) loop"
-
-   !$acc parallel vector_length(32) default(present)
+  !$acc parallel vector_length(32) default(present)
 
     !$acc loop independent gang private(nc, bounds_clump)
     do nc = 1,nclumps
@@ -871,6 +870,7 @@ contains
        ! non-bareground fluxes for all patches except lakes and urban landunits
        ! Calculate canopy temperature, latent and sensible fluxes from the canopy,
        ! and leaf water change by evapotranspiration
+       !call t_startf('canflux')
        call CanopyFluxes(bounds_clump,                                                   &
                 filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,                        &
                 atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
@@ -915,6 +915,7 @@ contains
                   filter(nc)%num_lakep, filter(nc)%lakep,  &
                   solarabs_vars, soilstate_vars, ch4_vars, &
                   energyflux_vars, lakestate_vars, dtime_mod)
+       !call t_stopf('bgplake')
        ! Set soil/snow temperatures including ground temperature
        call SoilTemperature(bounds_clump,                            &
                    filter(nc)%num_urbanl  , filter(nc)%urbanl,       &
@@ -1150,9 +1151,6 @@ contains
        if (.not. use_fates)then
           if (use_cn) then
              if (nstep_mod < 2 )then
-                if (masterproc) then
-                   write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-                end if
              else
 
                 call ColCBalanceCheck(bounds_clump, &
@@ -1251,7 +1249,9 @@ contains
     
 
     !!if (wrtdia) call mpi_barrier( mpicom,ier)
+    !!call t_startf('wrtdiag')
     !!call write_diagnostic(bounds_proc, wrtdia, nstep_mod, lnd2atm_vars)
+    !!call t_stopf('wrtdiag')
 
     ! ============================================================================
     ! Update history buffer
@@ -1282,8 +1282,10 @@ contains
     ! ============================================================================
     !! MOVE outside of clm_driver ?
     if (.not. use_noio) then
-
+        
+       call t_startf('clm_drv_io')
        ! Create history and write history tapes if appropriate
+       call t_startf('clm_drv_io_htapes')
 
          
        call hist_htapes_wrapup( rstwr, nlend, bounds_proc,                    &
@@ -1292,10 +1294,11 @@ contains
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
         call set_gpu_tape()
+        call t_stopf('clm_drv_io_htapes')
         
        ! Write restart/initial files if appropriate
        if (rstwr) then
-          !print *, "restart writing RDATE:",rdate
+          call t_startf('clm_drv_io_wrest')
           filer = restFile_filename(rdate=rdate)
          !$acc exit data copyout(atm2lnd_vars, canopystate_vars, energyflux_vars,&
          !$acc col_ef, veg_ef, frictionvel_vars, lakestate_vars, photosyns_vars, &
@@ -1323,7 +1326,10 @@ contains
          ! end if
          !----------------------------------------------
 
+
+          call t_stopf('clm_drv_io_wrest')
        end if
+       call t_stopf('clm_drv_io')
 
     end if
 
